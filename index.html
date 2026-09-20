@@ -1,0 +1,315 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Classroom Empty Slot Finder</title>
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+
+  <!-- ===== NAVBAR ===== -->
+  <nav class="navbar">
+    <div class="nav-inner">
+      <div class="nav-logo" onclick="goTo('home')">
+        <span class="logo-sq"></span>
+        <span>SlotFinder</span>
+      </div>
+      <button class="hamburger" id="hamburger" onclick="toggleMenu()">
+        <span></span><span></span><span></span>
+      </button>
+      <ul class="nav-links" id="navLinks">
+        <li><a class="nav-link active" data-page="home"   onclick="goTo('home')">Home</a></li>
+        <li><a class="nav-link"        data-page="rooms"  onclick="goTo('rooms')">Check Rooms</a></li>
+        <li><a class="nav-link"        data-page="add"    onclick="goTo('add')">Manage Rooms</a></li>
+        <li><a class="nav-link"        data-page="mark"   onclick="goTo('mark')">Mark Occupancy</a></li>
+        <li><a class="nav-link"        data-page="about"  onclick="goTo('about')">About</a></li>
+      </ul>
+    </div>
+  </nav>
+
+  <!-- ===== HOME ===== -->
+  <section class="page active" id="home">
+    <div class="hero">
+      <div class="hero-badge">For Students &amp; Faculty</div>
+      <h1 class="hero-title">Classroom <span class="hl">Empty Slot</span> Finder</h1>
+      <p class="hero-sub">
+        Instantly discover available classrooms and labs across campus.
+        Stop wandering hallways &mdash; find your space in seconds.
+      </p>
+      <div class="hero-btns">
+        <button class="btn btn-green" onclick="goTo('rooms')">Find Empty Rooms</button>
+        <button class="btn btn-outline" onclick="goTo('add')">Manage Rooms</button>
+      </div>
+      <div class="stats-row">
+        <div class="stat-item">
+          <span class="stat-num" id="availCount" style="color:#16a34a">0</span>
+          <span class="stat-label">Available</span>
+        </div>
+        <div class="stat-sep"></div>
+        <div class="stat-item">
+          <span class="stat-num" id="occCount" style="color:#dc2626">0</span>
+          <span class="stat-label">Occupied</span>
+        </div>
+        <div class="stat-sep"></div>
+        <div class="stat-item">
+          <span class="stat-num" id="totalCount" style="color:#2563eb">0</span>
+          <span class="stat-label">Total</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="home-section">
+      <h2 class="section-heading">Quick Overview</h2>
+      <div class="preview-grid" id="homePreview"></div>
+      <div style="text-align:center;margin-top:24px">
+        <button class="btn btn-outline" onclick="goTo('rooms')">View All Rooms</button>
+      </div>
+    </div>
+  </section>
+
+  <!-- ===== CHECK ROOMS ===== -->
+  <section class="page" id="rooms">
+    <div class="page-wrap">
+      <div class="page-head">
+        <h2 class="page-title">Room Availability</h2>
+        <p class="page-sub">Live status of all classrooms and labs</p>
+      </div>
+
+      <div class="filter-bar">
+        <div class="search-wrap">
+          <span class="search-ico">&#128269;</span>
+          <input id="searchInput" class="search-input" type="text"
+                 placeholder="Search rooms..." oninput="applyFilter()" />
+        </div>
+        <div class="ftabs">
+          <button class="ftab active" onclick="setFilter(this,'all')">All</button>
+          <button class="ftab" onclick="setFilter(this,'available')">Available</button>
+          <button class="ftab" onclick="setFilter(this,'occupied')">Occupied</button>
+          <button class="ftab" onclick="setFilter(this,'classroom')">Classrooms</button>
+          <button class="ftab" onclick="setFilter(this,'lab')">Labs</button>
+        </div>
+      </div>
+
+      <div class="rooms-grid" id="roomsGrid"></div>
+      <p class="empty-msg hidden" id="emptyMsg">No rooms match your search.</p>
+    </div>
+  </section>
+
+  <!-- ===== MANAGE ROOMS (ADD / EDIT / DELETE) ===== -->
+  <section class="page" id="add">
+    <div class="page-wrap">
+      <div class="page-head">
+        <h2 class="page-title">Manage Rooms</h2>
+        <p class="page-sub">Add, edit, or remove classrooms and labs dynamically</p>
+      </div>
+
+      <div class="manage-layout">
+
+        <!-- Add Room Form -->
+        <div class="manage-sidebar">
+          <div class="form-card">
+            <h3 class="form-card-title" id="formCardTitle">&#43; Add New Room</h3>
+
+            <!-- Hidden field for edit mode -->
+            <input type="hidden" id="editRoomId" value="" />
+
+            <div class="fgroup">
+              <label class="flabel" for="addRoomName">Room Name</label>
+              <input id="addRoomName" class="finput" type="text"
+                     placeholder="e.g. A101, Lab 3, Seminar Hall..." maxlength="40" />
+            </div>
+
+            <div class="fgroup">
+              <label class="flabel" for="addRoomType">Room Type</label>
+              <select id="addRoomType" class="fselect">
+                <option value="classroom">&#127979; Classroom</option>
+                <option value="lab">&#128300; Lab</option>
+                <option value="seminar">&#128161; Seminar Hall</option>
+              </select>
+            </div>
+
+            <div class="fgroup">
+              <label class="flabel" for="addRoomNote">Note <small style="font-weight:400;color:#6b7280">(optional)</small></label>
+              <input id="addRoomNote" class="finput" type="text"
+                     placeholder="e.g. AC Room, Projector available..." maxlength="60" />
+            </div>
+
+            <div class="fgroup">
+              <label class="flabel">Initial Status</label>
+              <div class="radio-row">
+                <label class="radio-opt selected-green" id="addLblAvail">
+                  <input type="radio" name="addStatus" value="available" checked onchange="syncAddRadio()" />
+                  <span class="rdot rdot-green"></span> Available
+                </label>
+                <label class="radio-opt" id="addLblOcc">
+                  <input type="radio" name="addStatus" value="occupied" onchange="syncAddRadio()" />
+                  <span class="rdot rdot-red"></span> Occupied
+                </label>
+              </div>
+            </div>
+
+            <div class="add-btn-row">
+              <button class="btn btn-green" id="addSubmitBtn" onclick="submitAddOrEdit()" style="flex:1">Add Room</button>
+              <button class="btn btn-outline hidden" id="cancelEditBtn" onclick="cancelEdit()" style="flex:1">Cancel</button>
+            </div>
+            <div id="addFormMsg" class="form-msg hidden"></div>
+          </div>
+
+          <!-- Reset to defaults -->
+          <div class="reset-box">
+            <p class="reset-label">Reset all rooms to default data?</p>
+            <button class="btn btn-outline btn-sm" onclick="confirmReset()">&#128260; Reset to Defaults</button>
+          </div>
+        </div>
+
+        <!-- Room list for manage -->
+        <div class="manage-list-wrap">
+          <div class="manage-list-head">
+            <h3 class="log-title">All Rooms <span class="room-count-badge" id="roomCountBadge">0</span></h3>
+            <input id="manageSearch" class="search-input" type="text"
+                   placeholder="&#128269; Search rooms..." oninput="renderManageList()" style="max-width:220px;padding-left:12px" />
+          </div>
+          <div id="manageList" class="manage-list"></div>
+        </div>
+
+      </div>
+    </div>
+  </section>
+
+  <!-- ===== MARK OCCUPANCY ===== -->
+  <section class="page" id="mark">
+    <div class="page-wrap two-col">
+      <div>
+        <div class="page-head">
+          <h2 class="page-title">Mark Occupancy</h2>
+          <p class="page-sub">Update a room's status in real-time</p>
+        </div>
+        <div class="form-card">
+          <div class="fgroup">
+            <label class="flabel" for="roomSel">Select Room</label>
+            <select id="roomSel" class="fselect"></select>
+          </div>
+          <div class="fgroup">
+            <label class="flabel">Set Status</label>
+            <div class="radio-row">
+              <label class="radio-opt" id="lblAvail">
+                <input type="radio" name="roomStatus" value="available" checked onchange="syncRadio()" />
+                <span class="rdot rdot-green"></span> Available
+              </label>
+              <label class="radio-opt" id="lblOcc">
+                <input type="radio" name="roomStatus" value="occupied" onchange="syncRadio()" />
+                <span class="rdot rdot-red"></span> Occupied
+              </label>
+            </div>
+          </div>
+          <div class="fgroup">
+            <label class="flabel" for="noteInp">Note <small style="font-weight:400;color:#6b7280">(optional)</small></label>
+            <input id="noteInp" class="finput" type="text"
+                   placeholder="e.g. Exam in progress..." maxlength="60" />
+          </div>
+          <button class="btn btn-green w100" onclick="submitForm()">Update Status</button>
+          <div id="formMsg" class="form-msg hidden"></div>
+        </div>
+      </div>
+
+      <div>
+        <h3 class="log-title">Recent Updates</h3>
+        <ul class="update-log" id="updateLog">
+          <li class="log-empty">No updates yet. Be the first!</li>
+        </ul>
+      </div>
+    </div>
+  </section>
+
+  <!-- ===== ABOUT ===== -->
+  <section class="page" id="about">
+    <div class="page-wrap">
+      <div class="page-head">
+        <h2 class="page-title">About This Project</h2>
+        <p class="page-sub">Built to make campus life a little easier</p>
+      </div>
+      <div class="about-grid">
+        <div class="about-card">
+          <div class="about-ico">&#127919;</div>
+          <h3>Our Mission</h3>
+          <p>Eliminate the frustration of searching for empty classrooms by providing real-time room availability at your fingertips.</p>
+        </div>
+        <div class="about-card">
+          <div class="about-ico">&#9889;</div>
+          <h3>Real-Time Updates</h3>
+          <p>Room statuses update instantly using localStorage, reflecting changes across the whole interface immediately.</p>
+        </div>
+        <div class="about-card">
+          <div class="about-ico">&#128241;</div>
+          <h3>Mobile Friendly</h3>
+          <p>Fully responsive design ensures a great experience on any screen size.</p>
+        </div>
+        <div class="about-card">
+          <div class="about-ico">&#128275;</div>
+          <h3>Open &amp; Free</h3>
+          <p>No login, no tracking. Just a clean, simple tool designed for students and faculty.</p>
+        </div>
+        <div class="about-card">
+          <div class="about-ico">&#10010;</div>
+          <h3>Add Rooms Dynamically</h3>
+          <p>Faculty can add any new classroom or lab on the fly — no code changes needed. All data persists in localStorage.</p>
+        </div>
+        <div class="about-card">
+          <div class="about-ico">&#9999;</div>
+          <h3>Edit &amp; Delete</h3>
+          <p>Update room names, types, or remove outdated rooms instantly. The UI reflects all changes in real-time.</p>
+        </div>
+      </div>
+      <div class="tech-box">
+        <h3 style="margin-bottom:12px">Built With</h3>
+        <div class="tech-tags">
+          <span class="ttag">HTML5</span>
+          <span class="ttag">CSS3</span>
+          <span class="ttag">Vanilla JS</span>
+          <span class="ttag">localStorage</span>
+          <span class="ttag">Flexbox &amp; Grid</span>
+          <span class="ttag">Dynamic CRUD</span>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ===== FOOTER ===== -->
+  <footer class="footer">
+    <div class="footer-inner">
+      <div class="footer-brand">
+        <span class="logo-sq"></span> Classroom Empty Slot Finder
+      </div>
+      <div class="footer-team">
+        <div class="team-label">Team Members</div>
+        <div class="team-pills">
+          <span class="pill">NETHRA R</span>
+          <span class="pill">SHAZMINA A J</span>
+          <span class="pill">SUDHEKSHA</span>
+          <span class="pill">INDHUMATHI</span>
+        </div>
+      </div>
+      <div class="footer-copy">&copy; 2025 SlotFinder. All rights reserved.</div>
+    </div>
+  </footer>
+
+  <!-- Floating toast -->
+  <div id="toast" class="toast hidden"></div>
+
+  <!-- Confirm Modal -->
+  <div id="confirmModal" class="modal-overlay hidden">
+    <div class="modal-box">
+      <div class="modal-ico">&#128683;</div>
+      <h3 class="modal-title" id="modalTitle">Are you sure?</h3>
+      <p class="modal-msg" id="modalMsg">This action cannot be undone.</p>
+      <div class="modal-btns">
+        <button class="btn btn-outline" onclick="closeModal()">Cancel</button>
+        <button class="btn btn-red" id="modalConfirmBtn" onclick="modalConfirm()">Confirm</button>
+      </div>
+    </div>
+  </div>
+
+  <script src="script.js"></script>
+</body>
+</html>
